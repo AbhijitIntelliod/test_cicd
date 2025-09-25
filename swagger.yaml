@@ -1,0 +1,2968 @@
+openapi: 3.0.3
+info:
+  title: Miftah.Ai Backend API
+  description: |
+    Comprehensive API documentation for Miftah.Ai Backend covering Authentication, User Management, Roles & Permissions, and KYC Verification.
+    
+  
+    
+    ## Authentication
+    All endpoints (except auth endpoints) require JWT authentication via AWS Cognito tokens.
+    
+    ## Features
+    - User registration and email verification
+    - OTP-based login system
+    - Role-based access control
+    - KYC document verification
+    - File upload support
+
+
+
+
+
+security:
+  - BearerAuth: []
+
+paths:
+  # Authentication Endpoints
+  /api/v1/auth/signup:
+    post:
+      tags:
+        - Authentication
+      summary: User Registration
+      description: Register a new user in both local database and AWS Cognito
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+            example:
+              email: "testuser@example.com"
+              fullName: "Test User"
+              phoneNumber: "1234567890"
+              password: "SecurePassword123!"
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignupResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/verify-email:
+    post:
+      tags:
+        - Authentication
+      summary: Email Verification
+      description: Verify email using the confirmation code sent by Cognito
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailVerificationRequest'
+            example:
+              email: "testuser@example.com"
+              otp: "123456"
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailVerificationResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/resend-confirmation-code:
+    post:
+      tags:
+        - Authentication
+      summary: Resend Verification Code
+      description: Resend verification email if user didn't receive it
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendCodeRequest'
+            example:
+              email: "testuser@example.com"
+      responses:
+        '200':
+          description: Verification email resent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResendCodeResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/send-login-otp:
+    post:
+      tags:
+        - Authentication
+      summary: Send Login OTP
+      description: Send login OTP to user's email
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginOTPRequest'
+            example:
+              email: "testuser@example.com"
+      responses:
+        '200':
+          description: Login OTP sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginOTPResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/verify-login-otp:
+    post:
+      tags:
+        - Authentication
+      summary: Verify Login OTP
+      description: Verify OTP and complete login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyLoginOTPRequest'
+            example:
+              email: "testuser@example.com"
+              otp: "123456"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/refresh-cognito:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh Cognito Tokens
+      description: Refresh expired access tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+            example:
+              refreshToken: "eyJjdHkiOiJKV1QiLCJlbmMiOiJBMjU2R0NNIiwiYWxnIjoiUlNBLU9BRVAifQ..."
+      responses:
+        '200':
+          description: Tokens refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokenResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/signin-via-password:
+    post:
+      tags:
+        - Authentication
+      summary: Password-based Sign In
+      description: Sign in using email and password (alternative authentication method)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordLoginRequest'
+            example:
+              email: "testuser@example.com"
+              password: "SecurePassword123!"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/send-password-reset-otp:
+    post:
+      tags:
+        - Authentication
+      summary: Send Password Reset OTP
+      description: Send a password reset OTP to the user's email address
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendPasswordResetOtpRequest'
+            example:
+              email: "testuser@example.com"
+      responses:
+        '200':
+          description: Password reset OTP sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendPasswordResetOtpResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/confirm-password-reset:
+    post:
+      tags:
+        - Authentication
+      summary: Confirm Password Reset
+      description: Confirm password reset using the OTP received via email
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmPasswordResetRequest'
+            example:
+              email: "testuser@example.com"
+              otp: "123456"
+              newPassword: "NewSecurePassword123!"
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfirmPasswordResetResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # User Management Endpoints
+  /api/v1/users/me:
+    get:
+      tags:
+        - User Management
+      summary: Get Current User Profile
+      description: Get the current authenticated user's profile information
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/users/all:
+    get:
+      tags:
+        - User Management
+      summary: Get All Users
+      description: Get all users with pagination and filtering options (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Users per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: status
+          in: query
+          description: Filter by status
+          required: false
+          schema:
+            type: string
+            enum: [active, inactive, suspended]
+        - name: role
+          in: query
+          description: Filter by role ID
+          required: false
+          schema:
+            type: integer
+        - name: search
+          in: query
+          description: Search by email, full name, or ID number
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsersListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/users:
+    post:
+      tags:
+        - User Management
+      summary: Create User
+      description: Create a new user with a specific role (Admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+            example:
+              email: "newuser@example.com"
+              fullName: "New User"
+              phoneNumber: "1234567890"
+              roleId: 3
+              password: "SecurePassword123!"
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUserResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/users/me/tokens:
+    get:
+      tags:
+        - User Management
+      summary: Get Current User Tokens
+      description: Get current user's stored Cognito tokens
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User tokens retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserTokensResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No tokens found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/users/{id}:
+    get:
+      tags:
+        - User Management
+      summary: Get User by ID
+      description: Get a specific user by their ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - User Management
+      summary: Update Current User Profile
+      description: Update current user's profile information
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+            example:
+              fullName: "Updated Name"
+              phoneNumber: "9876543210"
+      responses:
+        '200':
+          description: User profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/users/{userId}/role:
+    put:
+      tags:
+        - User Management
+      summary: Change User Role
+      description: Change a user's role (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeRoleRequest'
+            example:
+              roleId: 2
+      responses:
+        '200':
+          description: User role changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangeRoleResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User or role not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Roles & Permissions Endpoints
+  /api/v1/roles:
+    get:
+      tags:
+        - Roles & Permissions
+      summary: Get All Roles
+      description: Retrieve all roles with their permissions
+      parameters:
+        - name: page
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+      responses:
+        '200':
+          description: Roles retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RolesListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Roles & Permissions
+      summary: Create New Role
+      description: Create a new role with optional permissions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoleRequest'
+            example:
+              name: "KYC Reviewer"
+              type: "kyc_reviewer"
+              description: "Can review and approve KYC documents"
+              permissions:
+                - resource: "kyc_verifications"
+                  action: "read"
+                - resource: "kyc_verifications"
+                  action: "approve"
+      responses:
+        '201':
+          description: Role created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/roles/{id}:
+    get:
+      tags:
+        - Roles & Permissions
+      summary: Get Role by ID
+      description: Retrieve a specific role by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Role ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Role retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Role not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Roles & Permissions
+      summary: Update Role
+      description: Update role information
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Role ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoleRequest'
+            example:
+              name: "Senior KYC Reviewer"
+              description: "Senior level KYC reviewer with additional permissions"
+              is_active: true
+      responses:
+        '200':
+          description: Role updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Role not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Roles & Permissions
+      summary: Delete Role
+      description: Delete a role (only if no users are assigned to it)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Role ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Role deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Role not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/roles/assign:
+    post:
+      tags:
+        - Roles & Permissions
+      summary: Assign Role to User
+      description: Assign a role to a specific user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignRoleRequest'
+            example:
+              userId: 1
+              roleId: 2
+      responses:
+        '200':
+          description: Role assigned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignRoleResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/roles/{id}/users:
+    get:
+      tags:
+        - Roles & Permissions
+      summary: Get Users by Role
+      description: Get all users assigned to a specific role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Role ID
+          schema:
+            type: integer
+        - name: page
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleUsersResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Role not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/permissions:
+    get:
+      tags:
+        - Roles & Permissions
+      summary: Get Available Permissions
+      description: Get all available permissions and resources
+      responses:
+        '200':
+          description: Available permissions retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/permissions/roles/{roleId}:
+    get:
+      tags:
+        - Roles & Permissions
+      summary: Get Role Permissions
+      description: Get all permissions for a specific role
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: Role ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Role permissions retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RolePermissionsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Role not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Roles & Permissions
+      summary: Add Permission to Role
+      description: Add a new permission to a role
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: Role ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddPermissionRequest'
+            example:
+              resource: "kyc_verifications"
+              action: "approve"
+      responses:
+        '201':
+          description: Permission added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Roles & Permissions
+      summary: Update All Role Permissions
+      description: Replace all permissions for a role
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: Role ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePermissionsRequest'
+            example:
+              permissions:
+                - resource: "kyc_verifications"
+                  action: "read"
+                - resource: "kyc_verifications"
+                  action: "approve"
+                - resource: "kyc_verifications"
+                  action: "reject"
+      responses:
+        '200':
+          description: Role permissions updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/permissions/roles/{roleId}/{permissionId}:
+    delete:
+      tags:
+        - Roles & Permissions
+      summary: Remove Permission from Role
+      description: Remove a specific permission from a role
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: Role ID
+          schema:
+            type: integer
+        - name: permissionId
+          in: path
+          required: true
+          description: Permission ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Permission removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Permission not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/permissions/check/{userId}:
+    get:
+      tags:
+        - Roles & Permissions
+      summary: Check User Permission
+      description: Check if a user has a specific permission
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: integer
+        - name: resource
+          in: query
+          required: true
+          description: Resource name
+          schema:
+            type: string
+        - name: action
+          in: query
+          required: true
+          description: Action name
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Permission check completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionCheckResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # KYC Verification Endpoints
+  /api/v1/kyc/submit:
+    post:
+      tags:
+        - KYC Verification
+      summary: Submit KYC Documents
+      description: Submit identity documents for verification
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/KYCSubmitRequest'
+      responses:
+        '201':
+          description: KYC documents submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KYCSubmitResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/kyc/resubmit:
+    post:
+      tags:
+        - KYC Verification
+      summary: Resubmit KYC Documents
+      description: Resubmit documents after rejection
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/KYCSubmitRequest'
+      responses:
+        '201':
+          description: KYC documents resubmitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KYCSubmitResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/kyc/status:
+    get:
+      tags:
+        - KYC Verification
+      summary: Get User KYC Status
+      description: Get current KYC status for the authenticated user
+      responses:
+        '200':
+          description: KYC status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KYCStatusResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/kyc/history:
+    get:
+      tags:
+        - KYC Verification
+      summary: Get KYC History
+      description: Get KYC submission history for the authenticated user
+      parameters:
+        - name: page
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+      responses:
+        '200':
+          description: KYC history retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KYCHistoryResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/kyc/{kycId}:
+    get:
+      tags:
+        - KYC Verification
+      summary: Get KYC by ID
+      description: Get specific KYC verification details
+      parameters:
+        - name: kycId
+          in: path
+          required: true
+          description: KYC verification ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: KYC details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KYCDetailsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: KYC not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/kyc/{kycId}/document:
+    delete:
+      tags:
+        - KYC Verification
+      summary: Delete KYC Document
+      description: Delete a specific document from a KYC submission
+      parameters:
+        - name: kycId
+          in: path
+          required: true
+          description: KYC verification ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteDocumentRequest'
+            example:
+              fileKey: "documents/kyc/123/passport.pdf"
+      responses:
+        '200':
+          description: KYC document deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteDocumentResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Admin KYC Endpoints
+  /api/v1/kyc/admin/review-queue:
+    get:
+      tags:
+        - KYC Verification
+      summary: Get KYC Review Queue
+      description: Get pending KYC submissions for review (Admin only)
+      parameters:
+        - name: page
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: KYC review queue retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KYCReviewQueueResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/kyc/admin/review/{kycId}:
+    put:
+      tags:
+        - KYC Verification
+      summary: Review KYC
+      description: Approve or reject a KYC submission (Admin only)
+      parameters:
+        - name: kycId
+          in: path
+          required: true
+          description: KYC verification ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KYCReviewRequest'
+            examples:
+              approval:
+                summary: Approve KYC
+                value:
+                  status: "approved"
+                  notes: "Documents verified successfully"
+              rejection:
+                summary: Reject KYC
+                value:
+                  status: "rejected"
+                  rejectionReason: "Document quality is poor, please resubmit with clearer images"
+                  notes: "Front and back images are blurry"
+      responses:
+        '200':
+          description: KYC reviewed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KYCReviewResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: KYC not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/kyc/admin/status/{kycId}:
+    put:
+      tags:
+        - KYC Verification
+      summary: Update KYC Status
+      description: Update KYC status to under_review or pending (Admin only)
+      parameters:
+        - name: kycId
+          in: path
+          required: true
+          description: KYC verification ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KYCStatusUpdateRequest'
+            example:
+              status: "under_review"
+      responses:
+        '200':
+          description: KYC status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KYCStatusUpdateResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: KYC not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/kyc/admin/statistics:
+    get:
+      tags:
+        - KYC Verification
+      summary: Get KYC Statistics
+      description: Get KYC statistics and analytics (Admin only)
+      responses:
+        '200':
+          description: KYC statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KYCStatisticsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Access Token from AWS Cognito
+
+  schemas:
+    # Authentication Schemas
+    SignupRequest:
+      type: object
+      required:
+        - email
+        - fullName
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "testuser@example.com"
+        fullName:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: "Test User"
+        phoneNumber:
+          type: string
+          example: "1234567890"
+        password:
+          type: string
+          minLength: 8
+          example: "SecurePassword123!"
+
+    SignupResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        statusCode:
+          type: integer
+          example: 201
+        message:
+          type: string
+          example: "Registration successful. Please check your email for verification."
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Registration successful. Please check your email for verification code."
+            email:
+              type: string
+              example: "testuser@example.com"
+            userId:
+              type: integer
+              example: 37
+
+    EmailVerificationRequest:
+      type: object
+      required:
+        - email
+        - otp
+      properties:
+        email:
+          type: string
+          format: email
+          example: "testuser@example.com"
+        otp:
+          type: string
+          example: "123456"
+
+    EmailVerificationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Email verified successfully. You can now log in."
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Email verified successfully. You can now log in."
+            user:
+              $ref: '#/components/schemas/User'
+
+    ResendCodeRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          example: "testuser@example.com"
+
+    ResendCodeResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Verification email resent successfully"
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Verification email resent successfully. Please check your email."
+            email:
+              type: string
+              example: "testuser@example.com"
+
+    LoginOTPRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          example: "testuser@example.com"
+
+    LoginOTPResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Login OTP sent successfully via Cognito"
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Login OTP sent successfully via Cognito"
+            email:
+              type: string
+              example: "testuser@example.com"
+            challengeName:
+              type: string
+              example: "SOFTWARE_TOKEN_MFA"
+
+    VerifyLoginOTPRequest:
+      type: object
+      required:
+        - email
+        - otp
+      properties:
+        email:
+          type: string
+          format: email
+          example: "testuser@example.com"
+        otp:
+          type: string
+          example: "123456"
+
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Login successful. Cognito tokens provided."
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/UserWithPermissions'
+            cognitoTokens:
+              $ref: '#/components/schemas/CognitoTokens'
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          example: "eyJjdHkiOiJKV1QiLCJlbmMiOiJBMjU2R0NNIiwiYWxnIjoiUlNBLU9BRVAifQ..."
+
+    RefreshTokenResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Cognito tokens refreshed successfully"
+        data:
+          $ref: '#/components/schemas/CognitoTokens'
+
+    # User Management Schemas
+    CreateUserRequest:
+      type: object
+      required:
+        - email
+        - fullName
+        - roleId
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "newuser@example.com"
+        fullName:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: "New User"
+        phoneNumber:
+          type: string
+          example: "1234567890"
+        roleId:
+          type: integer
+          example: 3
+        password:
+          type: string
+          minLength: 8
+          example: "SecurePassword123!"
+
+    CreateUserResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        statusCode:
+          type: integer
+          example: 201
+        message:
+          type: string
+          example: "User created successfully and welcome email sent"
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/UserWithPermissions'
+            createdBy:
+              type: integer
+              example: 1
+            createdAt:
+              type: string
+              format: date-time
+              example: "2025-01-16T11:00:00.000Z"
+
+    UserProfileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "User profile retrieved successfully"
+        data:
+          $ref: '#/components/schemas/UserWithPermissions'
+
+    UsersListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Users retrieved successfully"
+        data:
+          type: object
+          properties:
+            users:
+              type: array
+              items:
+                $ref: '#/components/schemas/UserWithPermissions'
+            pagination:
+              $ref: '#/components/schemas/Pagination'
+
+    # Common Schemas
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 37
+        email:
+          type: string
+          format: email
+          example: "testuser@example.com"
+        fullName:
+          type: string
+          example: "Test User"
+        phoneNumber:
+          type: string
+          example: "1234567890"
+        isKycVerified:
+          type: boolean
+          example: false
+        status:
+          type: string
+          enum: [active, inactive, suspended, pending_verification]
+          example: "active"
+        emailVerifiedAt:
+          type: string
+          format: date-time
+          example: "2025-01-16T10:30:00.000Z"
+        roleId:
+          type: integer
+          example: 3
+        cognitoSub:
+          type: string
+          example: "testuser@example.com"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-01-16T10:25:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-01-16T10:30:00.000Z"
+
+    UserWithPermissions:
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          properties:
+            lastLoginAt:
+              type: string
+              format: date-time
+              example: "2025-01-16T10:35:00.000Z"
+            cognitoUsername:
+              type: string
+              example: "testuser@example.com"
+            role:
+              $ref: '#/components/schemas/Role'
+            permissions:
+              type: array
+              items:
+                $ref: '#/components/schemas/Permission'
+
+    Role:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 3
+        name:
+          type: string
+          example: "User"
+        type:
+          type: string
+          example: "user"
+        description:
+          type: string
+          example: "Standard user role"
+        is_active:
+          type: boolean
+          example: true
+
+    Permission:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        resource:
+          type: string
+          example: "users"
+        action:
+          type: string
+          example: "read"
+
+    CognitoTokens:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: "eyJraWQiOiJ..."
+        idToken:
+          type: string
+          example: "eyJraWQiOiJ..."
+        refreshToken:
+          type: string
+          example: "eyJjdHkiOiJKV1QiLCJlbmMiOiJBMjU2R0NNIiwiYWxnIjoiUlNBLU9BRVAifQ..."
+        tokenType:
+          type: string
+          example: "Bearer"
+        expiresIn:
+          type: integer
+          example: 3600
+
+    Pagination:
+      type: object
+      properties:
+        currentPage:
+          type: integer
+          example: 1
+        totalPages:
+          type: integer
+          example: 5
+        totalUsers:
+          type: integer
+          example: 50
+        usersPerPage:
+          type: integer
+          example: 10
+
+    PasswordLoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "testuser@example.com"
+        password:
+          type: string
+          example: "SecurePassword123!"
+
+    SendPasswordResetOtpRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          example: "testuser@example.com"
+
+    SendPasswordResetOtpResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Password reset OTP sent successfully via Cognito"
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Password reset OTP sent to email"
+            email:
+              type: string
+              example: "testuser@example.com"
+
+    ConfirmPasswordResetRequest:
+      type: object
+      required:
+        - email
+        - otp
+        - newPassword
+      properties:
+        email:
+          type: string
+          format: email
+          example: "testuser@example.com"
+        otp:
+          type: string
+          minLength: 6
+          maxLength: 6
+          pattern: "^[0-9]{6}$"
+          example: "123456"
+        newPassword:
+          type: string
+          minLength: 8
+          example: "NewSecurePassword123!"
+
+    ConfirmPasswordResetResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Password reset successfully"
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Password reset successfully"
+            email:
+              type: string
+              example: "testuser@example.com"
+
+    UserTokensResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "User tokens retrieved successfully"
+        data:
+          type: object
+          properties:
+            hasAccessToken:
+              type: boolean
+              example: true
+            hasIdToken:
+              type: boolean
+              example: true
+            hasRefreshToken:
+              type: boolean
+              example: true
+            tokenType:
+              type: string
+              example: "Bearer"
+            expiresIn:
+              type: integer
+              example: 3600
+            tokens:
+              $ref: '#/components/schemas/CognitoTokens'
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: "Updated Name"
+        phoneNumber:
+          type: string
+          example: "9876543210"
+
+    ChangeRoleRequest:
+      type: object
+      required:
+        - roleId
+      properties:
+        roleId:
+          type: integer
+          example: 2
+
+    ChangeRoleResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "User role changed from \"User\" to \"Admin\" successfully"
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/UserWithPermissions'
+            roleChange:
+              type: object
+              properties:
+                oldRole:
+                  type: string
+                  example: "User"
+                newRole:
+                  type: string
+                  example: "Admin"
+                changedBy:
+                  type: integer
+                  example: 1
+                changedAt:
+                  type: string
+                  format: date-time
+                  example: "2025-01-16T12:00:00.000Z"
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        statusCode:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: "Error message"
+        data:
+          type: object
+          nullable: true
+          example: null
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Operation completed successfully"
+
+    # Roles & Permissions Schemas
+    CreateRoleRequest:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          example: "KYC Reviewer"
+        type:
+          type: string
+          enum: [admin, moderator, user, kyc_reviewer, super_admin]
+          example: "kyc_reviewer"
+        description:
+          type: string
+          maxLength: 500
+          example: "Can review and approve KYC documents"
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PermissionRequest'
+
+    UpdateRoleRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          example: "Senior KYC Reviewer"
+        description:
+          type: string
+          maxLength: 500
+          example: "Senior level KYC reviewer with additional permissions"
+        is_active:
+          type: boolean
+          example: true
+
+    RoleResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/RoleWithPermissions'
+        message:
+          type: string
+          example: "Role retrieved successfully"
+
+    RoleWithPermissions:
+      allOf:
+        - $ref: '#/components/schemas/Role'
+        - type: object
+          properties:
+            created_at:
+              type: string
+              format: date-time
+              example: "2024-01-01T00:00:00.000Z"
+            updated_at:
+              type: string
+              format: date-time
+              example: "2024-01-01T00:00:00.000Z"
+            permissions:
+              type: array
+              items:
+                $ref: '#/components/schemas/PermissionWithId'
+
+    PermissionWithId:
+      allOf:
+        - $ref: '#/components/schemas/Permission'
+        - type: object
+          properties:
+            role_id:
+              type: integer
+              example: 2
+            created_at:
+              type: string
+              format: date-time
+              example: "2024-01-01T00:00:00.000Z"
+
+    PermissionRequest:
+      type: object
+      required:
+        - resource
+        - action
+      properties:
+        resource:
+          type: string
+          example: "kyc_verifications"
+        action:
+          type: string
+          example: "read"
+
+    RolesListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleWithPermissions'
+        message:
+          type: string
+          example: "Roles retrieved successfully"
+
+    AssignRoleRequest:
+      type: object
+      required:
+        - userId
+        - roleId
+      properties:
+        userId:
+          type: integer
+          example: 1
+        roleId:
+          type: integer
+          example: 2
+
+    AssignRoleResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            email:
+              type: string
+              example: "user@example.com"
+            role_id:
+              type: integer
+              example: 2
+            role:
+              $ref: '#/components/schemas/Role'
+        message:
+          type: string
+          example: "Role assigned successfully"
+
+    RoleUsersResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            users:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  email:
+                    type: string
+                    example: "user@example.com"
+                  role_id:
+                    type: integer
+                    example: 2
+                  role:
+                    $ref: '#/components/schemas/Role'
+            pagination:
+              $ref: '#/components/schemas/Pagination'
+        message:
+          type: string
+          example: "Users retrieved successfully"
+
+    PermissionsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            resources:
+              type: array
+              items:
+                type: string
+              example: ["users", "kyc_verifications", "roles", "permissions", "system_settings", "reports", "audit_logs"]
+            actions:
+              type: array
+              items:
+                type: string
+              example: ["create", "read", "update", "delete", "approve", "reject", "export"]
+            permissionMatrix:
+              type: array
+              items:
+                type: object
+                properties:
+                  resource:
+                    type: string
+                    example: "users"
+                  availableActions:
+                    type: array
+                    items:
+                      type: string
+                    example: ["create", "read", "update", "delete", "approve", "reject", "export"]
+        message:
+          type: string
+          example: "Available permissions retrieved successfully"
+
+    RolePermissionsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            role:
+              $ref: '#/components/schemas/Role'
+            permissions:
+              type: array
+              items:
+                $ref: '#/components/schemas/PermissionWithId'
+        message:
+          type: string
+          example: "Role permissions retrieved successfully"
+
+    AddPermissionRequest:
+      type: object
+      required:
+        - resource
+        - action
+      properties:
+        resource:
+          type: string
+          example: "kyc_verifications"
+        action:
+          type: string
+          example: "approve"
+
+    PermissionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/PermissionWithId'
+        message:
+          type: string
+          example: "Permission added successfully"
+
+    UpdatePermissionsRequest:
+      type: object
+      required:
+        - permissions
+      properties:
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PermissionRequest'
+
+    PermissionCheckResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            userId:
+              type: integer
+              example: 1
+            resource:
+              type: string
+              example: "kyc_verifications"
+            action:
+              type: string
+              example: "approve"
+            hasPermission:
+              type: boolean
+              example: true
+        message:
+          type: string
+          example: "Permission check completed"
+
+    # KYC Schemas
+    KYCSubmitRequest:
+      type: object
+      required:
+        - documentType
+        - documentNumber
+        - documents
+      properties:
+        documentType:
+          type: string
+          enum: [passport, national_id, driver_license, other]
+          example: "passport"
+        documentNumber:
+          type: string
+          minLength: 3
+          maxLength: 50
+          example: "A1234567"
+        documents:
+          type: array
+          items:
+            type: string
+            format: binary
+          maxItems: 5
+          description: "Document files (max 5 files, 10MB each)"
+
+    KYCSubmitResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        statusCode:
+          type: integer
+          example: 201
+        message:
+          type: string
+          example: "KYC documents submitted successfully"
+        data:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 123
+            status:
+              type: string
+              example: "pending"
+            submittedAt:
+              type: string
+              format: date-time
+              example: "2024-01-15T10:30:00.000Z"
+
+    KYCStatusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "KYC status retrieved successfully"
+        data:
+          type: object
+          properties:
+            userId:
+              type: integer
+              example: 123
+            email:
+              type: string
+              example: "user@example.com"
+            username:
+              type: string
+              example: "johndoe"
+            isKycVerified:
+              type: boolean
+              example: false
+            onboardingProgress:
+              $ref: '#/components/schemas/OnboardingProgress'
+            latestKyc:
+              $ref: '#/components/schemas/KYCWithDocuments'
+
+    OnboardingProgress:
+      type: object
+      properties:
+        emailVerified:
+          type: boolean
+          example: true
+        kycSubmitted:
+          type: boolean
+          example: true
+        kycApproved:
+          type: boolean
+          example: false
+        onboardingCompleted:
+          type: boolean
+          example: false
+        currentStep:
+          type: string
+          example: "kyc_review"
+
+    KYCWithDocuments:
+      allOf:
+        - $ref: '#/components/schemas/KYC'
+        - type: object
+          properties:
+            documentFiles:
+              type: array
+              items:
+                $ref: '#/components/schemas/DocumentFile'
+
+    DocumentFile:
+      type: object
+      properties:
+        url:
+          type: string
+          example: "https://signed-url-for-document"
+        key:
+          type: string
+          example: "documents/kyc/123/passport.pdf"
+        size:
+          type: integer
+          example: 1024000
+        mimetype:
+          type: string
+          example: "application/pdf"
+        originalName:
+          type: string
+          example: "passport.pdf"
+
+    KYCHistoryResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "KYC history retrieved successfully"
+        data:
+          type: object
+          properties:
+            kycVerifications:
+              type: array
+              items:
+                $ref: '#/components/schemas/KYC'
+            totalCount:
+              type: integer
+              example: 1
+            totalPages:
+              type: integer
+              example: 1
+            currentPage:
+              type: integer
+              example: 1
+
+    KYCDetailsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "KYC details retrieved successfully"
+        data:
+          allOf:
+            - $ref: '#/components/schemas/KYCWithDocuments'
+            - type: object
+              properties:
+                user:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 456
+                    email:
+                      type: string
+                      example: "user@example.com"
+                    username:
+                      type: string
+                      example: "johndoe"
+                    fullName:
+                      type: string
+                      example: "John Doe"
+
+    KYC:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 123
+        userId:
+          type: integer
+          example: 456
+        documentType:
+          type: string
+          example: "passport"
+        documentNumber:
+          type: string
+          example: "A1234567"
+        status:
+          type: string
+          enum: [pending, under_review, approved, rejected, expired]
+          example: "pending"
+        submittedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00.000Z"
+        reviewedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        rejectionReason:
+          type: string
+          nullable: true
+          example: null
+        notes:
+          type: string
+          nullable: true
+          example: null
+
+    DeleteDocumentRequest:
+      type: object
+      required:
+        - fileKey
+      properties:
+        fileKey:
+          type: string
+          example: "documents/kyc/123/passport.pdf"
+
+    DeleteDocumentResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "KYC document deleted successfully"
+        data:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 123
+            remainingDocuments:
+              type: integer
+              example: 2
+
+    KYCReviewQueueResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "KYC review queue retrieved successfully"
+        data:
+          type: object
+          properties:
+            kycVerifications:
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/KYCWithDocuments'
+                  - type: object
+                    properties:
+                      user:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                            example: 456
+                          email:
+                            type: string
+                            example: "user@example.com"
+                          username:
+                            type: string
+                            example: "johndoe"
+                          fullName:
+                            type: string
+                            example: "John Doe"
+                          phoneNumber:
+                            type: string
+                            example: "+1234567890"
+            totalCount:
+              type: integer
+              example: 1
+            totalPages:
+              type: integer
+              example: 1
+            currentPage:
+              type: integer
+              example: 1
+
+    KYCReviewRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [approved, rejected]
+          example: "approved"
+        rejectionReason:
+          type: string
+          example: "Document quality is poor, please resubmit with clearer images"
+        notes:
+          type: string
+          example: "Documents verified successfully"
+
+    KYCReviewResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "KYC approved successfully"
+        data:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 123
+            status:
+              type: string
+              example: "approved"
+            reviewedAt:
+              type: string
+              format: date-time
+              example: "2024-01-15T14:30:00.000Z"
+
+    KYCStatusUpdateRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [under_review, pending]
+          example: "under_review"
+
+    KYCStatusUpdateResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "KYC status updated successfully"
+        data:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 123
+            status:
+              type: string
+              example: "under_review"
+            updatedAt:
+              type: string
+              format: date-time
+              example: "2024-01-15T12:00:00.000Z"
+
+    KYCStatisticsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        statusCode:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "KYC statistics retrieved successfully"
+        data:
+          type: object
+          properties:
+            totalSubmissions:
+              type: integer
+              example: 150
+            recentSubmissions:
+              type: integer
+              example: 25
+            averageReviewTimeHours:
+              type: integer
+              example: 24
+            statusBreakdown:
+              type: object
+              properties:
+                pending:
+                  type: integer
+                  example: 10
+                under_review:
+                  type: integer
+                  example: 5
+                approved:
+                  type: integer
+                  example: 120
+                rejected:
+                  type: integer
+                  example: 15
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization endpoints
+  - name: User Management
+    description: User profile and management endpoints
+  - name: Roles & Permissions
+    description: Role-based access control endpoints
+  - name: KYC Verification
+    description: Know Your Customer verification endpoints

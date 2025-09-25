@@ -16,28 +16,29 @@ module.exports = {
         env_production: {
           NODE_ENV: 'production',
           PORT: 3000,
-          // RDS PostgreSQL Configuration - Using GitHub Secrets
-          POSTGRES_HOST: '${{ secrets.POSTGRES_HOST }}',
-          POSTGRES_PORT: '${{ secrets.POSTGRES_PORT }}',
-          POSTGRES_DB: '${{ secrets.POSTGRES_DB }}',
-          POSTGRES_USER: '${{ secrets.POSTGRES_USER }}',
-          POSTGRES_PASSWORD: '${{ secrets.POSTGRES_PASSWORD }}',
-          PGSSLMODE: '${{ secrets.PGSSLMODE }}',
-          PGCHANNELBINDING: '${{ secrets.PGCHANNELBINDING }}',
+          // RDS PostgreSQL Configuration - Will be set from .env file
+          POSTGRES_HOST: process.env.POSTGRES_HOST,
+          POSTGRES_PORT: process.env.POSTGRES_PORT,
+          POSTGRES_DB: process.env.POSTGRES_DB,
+          POSTGRES_USER: process.env.POSTGRES_USER,
+          POSTGRES_PASSWORD: process.env.POSTGRES_PASSWORD,
+          PGSSLMODE: process.env.PGSSLMODE,
+          PGCHANNELBINDING: process.env.PGCHANNELBINDING,
           // JWT
-          JWT_SECRET: '${{ secrets.JWT_SECRET }}',
+          JWT_SECRET: process.env.JWT_SECRET,
           // AWS
-          AWS_REGION: '${{ secrets.AWS_REGION }}',
-          AWS_ACCESS_KEY_ID: '${{ secrets.AWS_ACCESS_KEY_ID }}',
-          AWS_SECRET_ACCESS_KEY: '${{ secrets.AWS_SECRET_ACCESS_KEY }}',
-          COGNITO_USER_POOL_ID: '${{ secrets.COGNITO_USER_POOL_ID }}',
-          COGNITO_CLIENT_ID: '${{ secrets.COGNITO_CLIENT_ID }}',
-          COGNITO_CLIENT_SECRET: '${{ secrets.COGNITO_CLIENT_SECRET }}',
-          CLOUDWATCH_LOG_GROUP: '${{ secrets.CLOUDWATCH_LOG_GROUP }}',
-          ENABLE_CLOUDWATCH: '${{ secrets.ENABLE_CLOUDWATCH }}',
-          LOG_LEVEL: '${{ secrets.LOG_LEVEL }}',
-          FROM_EMAIL: '${{ secrets.FROM_EMAIL }}',
-          APP_NAME: '${{ secrets.APP_NAME }}'
+          AWS_REGION: process.env.AWS_REGION,
+          AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
+          AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
+          COGNITO_USER_POOL_ID: process.env.COGNITO_USER_POOL_ID,
+          COGNITO_CLIENT_ID: process.env.COGNITO_CLIENT_ID,
+          COGNITO_CLIENT_SECRET: process.env.COGNITO_CLIENT_SECRET,
+          CLOUDWATCH_LOG_GROUP: process.env.CLOUDWATCH_LOG_GROUP,
+          ENABLE_CLOUDWATCH: process.env.ENABLE_CLOUDWATCH,
+          LOG_LEVEL: process.env.LOG_LEVEL,
+          FROM_EMAIL: process.env.FROM_EMAIL,
+          APP_NAME: process.env.APP_NAME,
+          S3_BUCKET_NAME: process.env.S3_BUCKET_NAME
         },
   
         // Logging

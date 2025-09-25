@@ -1,0 +1,12 @@
+node_modules/
+coverage/
+.git/
+*.min.js
+dist/
+build/
+.env
+.env.*
+*.log
+.DS_Store
+Thumbs.db
+package-lock.json

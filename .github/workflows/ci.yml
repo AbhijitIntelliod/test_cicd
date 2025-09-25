@@ -1,0 +1,226 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # ------------------------
+  # Test job
+  # ------------------------
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Install linting dependencies
+        run: npm install --save-dev eslint prettier
+
+      - name: Set test environment variables
+        run: |
+          echo "NODE_ENV=test" >> $GITHUB_ENV
+          echo "POSTGRES_HOST=localhost" >> $GITHUB_ENV
+          echo "POSTGRES_USER=postgres" >> $GITHUB_ENV
+          echo "POSTGRES_PASSWORD=postgres" >> $GITHUB_ENV
+          echo "POSTGRES_DB=test_db" >> $GITHUB_ENV
+          echo "POSTGRES_PORT=5432" >> $GITHUB_ENV
+          echo "PGSSLMODE=disable" >> $GITHUB_ENV
+          echo "PGCHANNELBINDING=disable" >> $GITHUB_ENV
+          echo "PORT=3001" >> $GITHUB_ENV
+          echo "JWT_SECRET=test_jwt_secret_key" >> $GITHUB_ENV
+          echo "AWS_REGION=ap-south-1" >> $GITHUB_ENV
+          echo "AWS_ACCESS_KEY_ID=test_key" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=test_secret" >> $GITHUB_ENV
+          echo "COGNITO_USER_POOL_ID=test_pool_id" >> $GITHUB_ENV
+          echo "COGNITO_CLIENT_ID=test_client_id" >> $GITHUB_ENV
+          echo "COGNITO_CLIENT_SECRET=test_client_secret" >> $GITHUB_ENV
+          echo "CLOUDWATCH_LOG_GROUP=test_logs" >> $GITHUB_ENV
+          echo "ENABLE_CLOUDWATCH=false" >> $GITHUB_ENV
+          echo "LOG_LEVEL=debug" >> $GITHUB_ENV
+          echo "FROM_EMAIL=test@example.com" >> $GITHUB_ENV
+          echo "APP_NAME=Miftah" >> $GITHUB_ENV
+          echo "S3_BUCKET_NAME=test-bucket" >> $GITHUB_ENV
+
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h localhost -p 5432 -U postgres; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+
+      # - name: Seed roles for testing
+      #   run: npm run seed:roles
+
+      - name: Run tests with coverage
+        run: npm run test:ci
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+      - name: Run linting
+        run: |
+          npm run lint:ci
+          
+      - name: Upload ESLint report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eslint-report
+          path: eslint-report.json
+          
+      - name: Check code formatting
+        run: npm run format:check
+
+  # ------------------------
+  # Deployment job (runs only after test passes)
+  # ------------------------
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          port: 22
+          script: |
+            # Navigate to your app directory
+            cd /home/${{ secrets.EC2_USERNAME }}/nodejs_cicd_test
+
+            # Verify we're in the correct directory
+            pwd
+            ls -la
+
+            # Create logs directory if it doesn't exist
+            mkdir -p logs
+
+            # Pull latest changes
+            git pull origin main
+
+            # Install/update dependencies
+            npm ci --production
+
+            # Create/update environment file
+            cat > .env << EOF
+            # ==========================
+            # PostgreSQL RDS
+            # ==========================
+            POSTGRES_HOST=${{ secrets.POSTGRES_HOST }}
+            POSTGRES_PORT=${{ secrets.POSTGRES_PORT }}
+            POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            PGSSLMODE=${{ secrets.PGSSLMODE }}
+            PGCHANNELBINDING=${{ secrets.PGCHANNELBINDING }}
+
+            # ==========================
+            # Server Configuration
+            # ==========================
+            PORT=${{ secrets.PORT }}
+            NODE_ENV=production
+
+            # JWT Secret
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+
+            # ==========================
+            # AWS General
+            # ==========================
+            AWS_REGION=${{ secrets.AWS_REGION }}
+            AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+            # ==========================
+            # AWS Cognito Configuration
+            # ==========================
+            COGNITO_USER_POOL_ID=${{ secrets.COGNITO_USER_POOL_ID }}
+            COGNITO_CLIENT_ID=${{ secrets.COGNITO_CLIENT_ID }}
+            COGNITO_CLIENT_SECRET=${{ secrets.COGNITO_CLIENT_SECRET }}
+
+            # ==========================
+            # Logging & Monitoring
+            # ==========================
+            CLOUDWATCH_LOG_GROUP=${{ secrets.CLOUDWATCH_LOG_GROUP }}
+            ENABLE_CLOUDWATCH=${{ secrets.ENABLE_CLOUDWATCH }}
+            LOG_LEVEL=${{ secrets.LOG_LEVEL }}
+
+            # ==========================
+            # App Settings
+            # ==========================
+            FROM_EMAIL=${{ secrets.FROM_EMAIL }}
+            APP_NAME=${{ secrets.APP_NAME }}
+            S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}
+            EOF
+
+            # Set proper permissions for env file
+            chmod 600 .env
+
+            # Run database migrations
+            npx sequelize-cli db:migrate || echo "No migrations to run"
+
+            # Run database seeds for production (if needed)
+            # npx sequelize-cli db:seed:all || echo "No seeds to run"
+
+            # Verify ecosystem.config.js exists
+            if [ ! -f "ecosystem.config.js" ]; then
+              echo "ERROR: ecosystem.config.js not found in current directory"
+              exit 1
+            fi
+
+            # Stop existing PM2 process if running
+            pm2 stop nodejs_cicd_test || echo "No existing process to stop"
+
+            # Verify environment variables are loaded
+            echo "🔍 Verifying environment variables..."
+            node scripts/verify-env.js
+
+            # Start application using PM2 with production environment
+            pm2 start ecosystem.config.js --env production
+
+            # Save PM2 configuration
+            pm2 save
+
+            # Show PM2 status
+            pm2 status
+
+            # Show recent logs for debugging
+            pm2 logs nodejs_cicd_test --lines 20

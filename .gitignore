@@ -6,3 +6,9 @@ npm-debug.log
 dist/
 build/
 coverage/
+
+# Log files (but keep the logs directory structure)
+logs/*.log
+logs/out.log
+logs/error.log
+!logs/.gitkeep

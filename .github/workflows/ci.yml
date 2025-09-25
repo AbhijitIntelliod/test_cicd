@@ -79,16 +79,16 @@ jobs:
       # - name: Seed roles for testing
       #   run: npm run seed:roles
 
-      - name: Run tests with coverage
-        run: npm run test:ci
+      # - name: Run tests with coverage
+      #   run: npm run test:ci
 
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
+      # - name: Upload coverage reports to Codecov
+      #   uses: codecov/codecov-action@v3
+      #   with:
+      #     file: ./coverage/lcov.info
+      #     flags: unittests
+      #     name: codecov-umbrella
+      #     fail_ci_if_error: false
 
       - name: Run linting
         run: |

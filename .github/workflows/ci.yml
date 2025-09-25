@@ -123,6 +123,7 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           port: 22
+          command_timeout: 10m
           script: |
             # Set deployment directory
             DEPLOY_DIR="/home/${{ secrets.EC2_USERNAME }}/nodejs_cicd_test"
@@ -236,12 +237,21 @@ jobs:
             # Set proper permissions for env file
             chmod 600 .env
 
-       
-
+            # Verify .env file was created and has content
+            echo "🔍 Verifying .env file..."
+            if [ -f ".env" ]; then
+              echo "✅ .env file exists"
+              echo "📊 .env file size: $(wc -l < .env) lines"
+              echo "🔒 .env file permissions: $(ls -la .env)"
+            else
+              echo "❌ .env file not found!"
+              exit 1
+            fi
 
             # Stop existing PM2 process if running
             echo "Stopping existing PM2 process..."
             pm2 stop nodejs_cicd_test || echo "No existing process to stop"
+            pm2 delete nodejs_cicd_test || echo "No existing process to delete"
 
             # Verify environment variables are loaded
             echo "🔍 Verifying environment variables..."
@@ -251,8 +261,9 @@ jobs:
               echo "Warning: verify-env.js script not found, skipping verification"
             fi
 
-            # Start application using PM2 with production environment
+            # Load environment variables and start application using PM2
             echo "Starting application with PM2..."
+            # PM2 will automatically load .env file when starting
             pm2 start ecosystem.config.js --env production
             if [ $? -ne 0 ]; then
               echo "ERROR: Failed to start application with PM2"

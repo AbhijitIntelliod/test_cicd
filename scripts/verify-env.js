@@ -6,10 +6,16 @@ console.log('=====================================');
 
 // Check if we're in a local development environment
 const isLocalDev = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
+const isProduction = process.env.NODE_ENV === 'production';
+
 if (isLocalDev) {
   console.log('📝 Running in LOCAL DEVELOPMENT mode');
   console.log('💡 For local development, create a .env file based on env.example');
   console.log('🚀 In production, PM2 will load variables from .env file created by CI/CD');
+  console.log('');
+} else if (isProduction) {
+  console.log('🚀 Running in PRODUCTION mode');
+  console.log('📋 Environment variables should be loaded from .env file by PM2');
   console.log('');
 }
 
@@ -23,7 +29,7 @@ const requiredVars = [
   'JWT_SECRET',
   'AWS_REGION',
   'COGNITO_USER_POOL_ID',
-  'APP_NAME'
+  'APP_NAME',
 ];
 
 let allPresent = true;

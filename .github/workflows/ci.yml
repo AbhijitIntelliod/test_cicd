@@ -126,7 +126,7 @@ jobs:
           command_timeout: 10m
           script: |
             # Set deployment directory
-            DEPLOY_DIR="/home/${{ secrets.EC2_USERNAME }}/nodejs_cicd_test"
+            DEPLOY_DIR="/home/${{ secrets.EC2_USERNAME }}/Miftah"
             
             # Create deployment directory if it doesn't exist
             if [ ! -d "$DEPLOY_DIR" ]; then

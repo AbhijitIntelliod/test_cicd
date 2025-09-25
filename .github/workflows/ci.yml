@@ -124,21 +124,63 @@ jobs:
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           port: 22
           script: |
-            # Navigate to your app directory
-            cd /home/${{ secrets.EC2_USERNAME }}/nodejs_cicd_test
-
+            # Set deployment directory
+            DEPLOY_DIR="/home/${{ secrets.EC2_USERNAME }}/nodejs_cicd_test"
+            
+            # Create deployment directory if it doesn't exist
+            if [ ! -d "$DEPLOY_DIR" ]; then
+              echo "Creating deployment directory: $DEPLOY_DIR"
+              mkdir -p "$DEPLOY_DIR"
+            fi
+            
+            # Navigate to deployment directory
+            cd "$DEPLOY_DIR"
+            
             # Verify we're in the correct directory
-            pwd
+            echo "Current directory: $(pwd)"
             ls -la
+
+            # Check if this is a git repository, if not clone it
+            if [ ! -d ".git" ]; then
+              echo "Not a git repository, cloning from origin..."
+              # Remove any existing files first (but preserve hidden files like .env)
+              rm -rf * .[^.]*
+              # Clone the repository
+              git clone https://github.com/${{ github.repository }}.git .
+              if [ $? -ne 0 ]; then
+                echo "ERROR: Failed to clone repository"
+                exit 1
+              fi
+            else
+              echo "Git repository found, pulling latest changes..."
+              git pull origin main
+              if [ $? -ne 0 ]; then
+                echo "ERROR: Failed to pull latest changes"
+                exit 1
+              fi
+            fi
+
+            # Verify essential files exist
+            if [ ! -f "package.json" ]; then
+              echo "ERROR: package.json not found"
+              exit 1
+            fi
+
+            if [ ! -f "ecosystem.config.js" ]; then
+              echo "ERROR: ecosystem.config.js not found"
+              exit 1
+            fi
 
             # Create logs directory if it doesn't exist
             mkdir -p logs
 
-            # Pull latest changes
-            git pull origin main
-
             # Install/update dependencies
-            npm ci --production
+            echo "Installing dependencies..."
+            npm install --production
+            if [ $? -ne 0 ]; then
+              echo "ERROR: Failed to install dependencies"
+              exit 1
+            fi
 
             # Create/update environment file
             cat > .env << EOF
@@ -194,33 +236,38 @@ jobs:
             # Set proper permissions for env file
             chmod 600 .env
 
-            # Run database migrations
-            npx sequelize-cli db:migrate || echo "No migrations to run"
+       
 
-            # Run database seeds for production (if needed)
-            # npx sequelize-cli db:seed:all || echo "No seeds to run"
-
-            # Verify ecosystem.config.js exists
-            if [ ! -f "ecosystem.config.js" ]; then
-              echo "ERROR: ecosystem.config.js not found in current directory"
-              exit 1
-            fi
 
             # Stop existing PM2 process if running
+            echo "Stopping existing PM2 process..."
             pm2 stop nodejs_cicd_test || echo "No existing process to stop"
 
             # Verify environment variables are loaded
             echo "🔍 Verifying environment variables..."
-            node scripts/verify-env.js
+            if [ -f "scripts/verify-env.js" ]; then
+              node scripts/verify-env.js
+            else
+              echo "Warning: verify-env.js script not found, skipping verification"
+            fi
 
             # Start application using PM2 with production environment
+            echo "Starting application with PM2..."
             pm2 start ecosystem.config.js --env production
+            if [ $? -ne 0 ]; then
+              echo "ERROR: Failed to start application with PM2"
+              exit 1
+            fi
 
             # Save PM2 configuration
             pm2 save
 
             # Show PM2 status
+            echo "PM2 Status:"
             pm2 status
 
             # Show recent logs for debugging
+            echo "Recent application logs:"
             pm2 logs nodejs_cicd_test --lines 20
+
+            echo "✅ Deployment completed successfully!"

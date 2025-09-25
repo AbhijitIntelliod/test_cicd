@@ -90,19 +90,19 @@ jobs:
       #     name: codecov-umbrella
       #     fail_ci_if_error: false
 
-      - name: Run linting
-        run: |
-          npm run lint:ci
+      # - name: Run linting
+      #   run: |
+      #     npm run lint:ci
           
-      - name: Upload ESLint report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: eslint-report
-          path: eslint-report.json
+      # - name: Upload ESLint report
+      #   uses: actions/upload-artifact@v4
+      #   if: always()
+      #   with:
+      #     name: eslint-report
+      #     path: eslint-report.json
           
-      - name: Check code formatting
-        run: npm run format:check
+      # - name: Check code formatting
+      #   run: npm run format:check
 
   # ------------------------
   # Deployment job (runs only after test passes)

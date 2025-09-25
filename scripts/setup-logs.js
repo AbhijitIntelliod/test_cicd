@@ -17,3 +17,4 @@ if (!fs.existsSync(gitkeepPath)) {
   fs.writeFileSync(gitkeepPath, '');
   console.log('✅ Created .gitkeep file in logs directory');
 }
+

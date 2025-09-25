@@ -155,3 +155,4 @@ pm2 logs nodejs_cicd_test
 # Check environment file exists (on EC2)
 ls -la .env
 ```
+

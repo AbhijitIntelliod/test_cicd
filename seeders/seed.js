@@ -3,6 +3,7 @@
 const db = require('../config/db.config');
 const logger = require('../config/logger');
 const { seedRoles } = require('./roleSeeder');
+const { seedUsers } = require('./userSeeder');
 
 
 /**
@@ -29,6 +30,9 @@ const seedDatabase = async () => {
     console.log('1️⃣ Seeding roles and permissions...');
     await seedRoles();
     
+    //Seed users (must be after roles)
+    console.log('2️⃣ Seeding users...');
+    await seedUsers();
 
     // Add more seeders here as needed
     // Example:
@@ -84,7 +88,7 @@ const checkDatabase = async () => {
     console.log(`📊 Found ${tables.length} tables:`, tables.join(', '));
     
     // Check roles
-    const { Role, RolePermission } = db.models;
+    const { Role, RolePermission } = db;
     const roleCount = await Role.count();
     const permissionCount = await RolePermission.count();
     
@@ -118,12 +122,19 @@ const main = async () => {
         await db.sequelize.sync({ alter: true });
         await seedRoles();
         break;
+      case 'users':
+        console.log('👥 Seeding users only...');
+        await db.sequelize.authenticate();
+        await db.sequelize.sync({ alter: true });
+        await seedUsers();
+        break;
       default:
         console.log('📖 Usage:');
         console.log('  node seeders/seed.js seed    - Run all seeders');
         // console.log('  node seeders/seed.js reset   - Reset database and run seeders');
         console.log('  node seeders/seed.js check   - Check database status');
         console.log('  node seeders/seed.js roles   - Seed roles only');
+        console.log('  node seeders/seed.js users   - Seed users only');
         console.log('');
         console.log('💡 You can also run: npm run seed');
         process.exit(0);

@@ -17,6 +17,7 @@
     "seed:reset": "node seeders/seed.js reset",
     "seed:check": "node seeders/seed.js check",
     "seed:roles": "node seeders/seed.js roles",
+    "seed:users": "node seeders/seed.js users",
     "lint": "eslint . --ext .js",
     "lint:fix": "eslint . --ext .js --fix",
     "format": "prettier --write .",

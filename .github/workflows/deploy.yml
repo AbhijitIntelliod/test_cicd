@@ -1,0 +1,79 @@
+name: Deploy Pipeline
+
+on:
+  workflow_run:
+    workflows: ["Test Pipeline"]
+    types:
+      - completed
+    branches: [main, develop]
+
+jobs:
+  # ------------------------
+  # Deployment job
+  # ------------------------
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          port: 22
+          command_timeout: 10m
+          script: |
+            DEPLOY_DIR="/home/${{ secrets.EC2_USERNAME }}/Miftah"
+
+            if [ ! -d "$DEPLOY_DIR" ]; then
+              mkdir -p "$DEPLOY_DIR"
+            fi
+
+            cd "$DEPLOY_DIR"
+
+            if [ ! -d ".git" ]; then
+              rm -rf * .[^.]*
+              git clone git@github.com:AbhijitIntelliod/test_cicd.git .
+            else
+              git fetch --all
+              git reset --hard origin/main
+            fi
+
+            npm ci --production
+
+            cat > .env << EOF
+            POSTGRES_HOST=${{ secrets.POSTGRES_HOST }}
+            POSTGRES_PORT=${{ secrets.POSTGRES_PORT }}
+            POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            PGSSLMODE=${{ secrets.PGSSLMODE }}
+            PGCHANNELBINDING=${{ secrets.PGCHANNELBINDING }}
+            PORT=${{ secrets.PORT }}
+            NODE_ENV=production
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            AWS_REGION=${{ secrets.AWS_REGION }}
+            AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            COGNITO_USER_POOL_ID=${{ secrets.COGNITO_USER_POOL_ID }}
+            COGNITO_CLIENT_ID=${{ secrets.COGNITO_CLIENT_ID }}
+            COGNITO_CLIENT_SECRET=${{ secrets.COGNITO_CLIENT_SECRET }}
+            CLOUDWATCH_LOG_GROUP=${{ secrets.CLOUDWATCH_LOG_GROUP }}
+            ENABLE_CLOUDWATCH=${{ secrets.ENABLE_CLOUDWATCH }}
+            LOG_LEVEL=${{ secrets.LOG_LEVEL }}
+            FROM_EMAIL=${{ secrets.FROM_EMAIL }}
+            APP_NAME=${{ secrets.APP_NAME }}
+            S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}
+            EOF
+
+            chmod 600 .env
+
+            pm2 reload ecosystem.config.js --env production || pm2 start ecosystem.config.js --env production
+            pm2 save
+            pm2 status
+            pm2 logs Miftah --lines 20 --nostream || true

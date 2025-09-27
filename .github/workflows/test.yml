@@ -1,0 +1,86 @@
+name: Test Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # ------------------------
+  # Test job
+  # ------------------------
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # - name: Install dependencies
+      #   run: npm ci
+        
+      # - name: Install linting dependencies
+      #   run: npm install --save-dev eslint prettier
+
+      - name: Set test environment variables
+        run: |
+          echo "NODE_ENV=test" >> $GITHUB_ENV
+          echo "POSTGRES_HOST=localhost" >> $GITHUB_ENV
+          echo "POSTGRES_USER=postgres" >> $GITHUB_ENV
+          echo "POSTGRES_PASSWORD=postgres" >> $GITHUB_ENV
+          echo "POSTGRES_DB=test_db" >> $GITHUB_ENV
+          echo "POSTGRES_PORT=5432" >> $GITHUB_ENV
+          echo "PGSSLMODE=disable" >> $GITHUB_ENV
+          echo "PGCHANNELBINDING=disable" >> $GITHUB_ENV
+          echo "PORT=3000" >> $GITHUB_ENV
+          echo "JWT_SECRET=test_jwt_secret_key" >> $GITHUB_ENV
+          echo "AWS_REGION=ap-south-1" >> $GITHUB_ENV
+          echo "AWS_ACCESS_KEY_ID=test_key" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=test_secret" >> $GITHUB_ENV
+          echo "COGNITO_USER_POOL_ID=test_pool_id" >> $GITHUB_ENV
+          echo "COGNITO_CLIENT_ID=test_client_id" >> $GITHUB_ENV
+          echo "COGNITO_CLIENT_SECRET=test_client_secret" >> $GITHUB_ENV
+          echo "CLOUDWATCH_LOG_GROUP=test_logs" >> $GITHUB_ENV
+          echo "ENABLE_CLOUDWATCH=false" >> $GITHUB_ENV
+          echo "LOG_LEVEL=debug" >> $GITHUB_ENV
+          echo "FROM_EMAIL=test@example.com" >> $GITHUB_ENV
+          echo "APP_NAME=Miftah" >> $GITHUB_ENV
+          echo "S3_BUCKET_NAME=test-bucket" >> $GITHUB_ENV
+
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h localhost -p 5432 -U postgres; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+
+      # - name: Run tests
+      #   run: npm run test:ci
+
+      # - name: Run linting
+      #   run: npm run lint:ci
+          
+      # - name: Check code formatting
+      #   run: npm run format:check
